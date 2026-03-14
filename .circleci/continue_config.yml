@@ -61,11 +61,11 @@ jobs:
                 # This is a specific version
                 VERSION=$(<"<< parameters.path >>/orb_version.txt")
                 echo "New version: $VERSION"
-                if [[ "$VERSION" == potato/<< parameters.path >>@0.0.0 ]]; then
+                if [[ "$VERSION" == linia/<< parameters.path >>@0.0.0 ]]; then
                     echo "Publishing the orb for the first time!"
                     circleci orb publish << parameters.path >>/orb.yml "$VERSION" --token "$CIRCLE_TOKEN"
                 else
-                    CURRENT_VERSION=$(circleci orb info potato/<< parameters.path >> --token "$CIRCLE_TOKEN" | grep "Latest" | cut -d' ' -f2)
+                    CURRENT_VERSION=$(circleci orb info linia/<< parameters.path >> --token "$CIRCLE_TOKEN" | grep "Latest" | cut -d' ' -f2)
                     echo "Current version: $CURRENT_VERSION"            
                     if [[ "$VERSION" != "$CURRENT_VERSION" ]]; then
                         circleci orb publish << parameters.path >>/orb.yml "$VERSION" --token "$CIRCLE_TOKEN"

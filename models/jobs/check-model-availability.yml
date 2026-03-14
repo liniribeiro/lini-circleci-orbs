@@ -1,0 +1,27 @@
+parameters:
+  env-name:
+    type: string
+    default: "staging"
+  model-name:
+    type: string
+    default: "template-ml-model"
+  pipeline-number:
+    type: integer
+executor: aws-cli/default
+resource_class: small
+steps:
+  - checkout
+  - aws-oidc/aws-configure-credentials:
+      role-arn: ${AWS_ROLE_ARN}
+  - run:
+      name: Check if model is available for inference
+      command: |
+        S3_MODEL_PREFIX=s3://<< parameters.env-name >>-ml-platform/models/<< parameters.model-name >>
+        FOLDER_PATH="$S3_MODEL_PREFIX/<< parameters.pipeline-number >>/training-artifacts/"
+
+        if aws s3 ls "$FOLDER_PATH" >/dev/null 2>&1; then
+          echo "Model available at: $FOLDER_PATH"
+        else
+          echo "Model not available at: $FOLDER_PATH"
+          exit 1
+        fi

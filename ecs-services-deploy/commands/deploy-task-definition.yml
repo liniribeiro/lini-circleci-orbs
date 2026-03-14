@@ -1,0 +1,62 @@
+parameters:
+  description:
+    type: string
+    default: "service"
+  file:
+    type: string
+  pipeline-number:
+    type: integer
+  image-tag:
+    type: string
+    default: ""
+  task-name:
+    type: string
+    default: ""
+  region:
+    type: string
+    default: "us-east-2"
+  service-name:
+    type: string
+    default: ""
+  cluster-name:
+    type: string
+    default: ""
+  wait-service-stable:
+    type: boolean
+    default: false
+    description: "Option to run the aws command ecs wait services-stable after update the service"
+steps:
+  - run:
+      name: Details - << parameters.service-name >>
+      command: |
+        echo "cluster=<< parameters.cluster-name >>"
+        echo "service=<< parameters.service-name >>"
+        echo "region=<< parameters.region >>"
+        echo "image_tag=<< parameters.image-tag >>"
+        echo "pipeline_number=<< parameters.pipeline-number >>"
+
+        export IMAGE_TAG=<< parameters.image-tag >>
+        export PIPELINE_NUMBER=<< parameters.pipeline-number >>
+
+  - register-task-definition:
+      file: << parameters.file >>
+      pipeline-number: << parameters.pipeline-number >>
+      image-tag: << parameters.image-tag >>
+      region: << parameters.region >>
+
+  - run:
+      name: Deploy Service - << parameters.service-name >>
+      command: |
+
+        aws ecs update-service --cluster << parameters.cluster-name >> \
+          --service << parameters.service-name >> \
+          --task-definition $NEW_TASK_DEFINITION_ARN \
+          --force-new-deployment \
+          --region << parameters.region >>
+
+        if [[  "<< parameters.wait-service-stable >>" ]]; then
+            aws ecs wait services-stable \
+              --cluster  << parameters.cluster-name >> \
+              --services << parameters.service-name >> \
+              --region << parameters.region >>
+        fi

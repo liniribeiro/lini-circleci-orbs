@@ -1,0 +1,32 @@
+parameters:
+  env-name:
+    type: string
+    default: "staging"
+  model-names:
+    type: string
+    default: "template-ml-model"
+  pipeline-number:
+    type: integer
+executor: aws-cli/default
+resource_class: small
+steps:
+  - checkout
+  - aws-oidc/aws-configure-credentials:
+      role-arn: ${AWS_ROLE_ARN}
+  - run:
+      name: Update model registry version - used by Airflow to pick updated model for training
+      command: |
+        ENV_NAME="<< parameters.env-name >>"
+        PIPELINE_NUMBER="<< parameters.pipeline-number >>"
+        MODEL_NAMES="<< parameters.model-names >>"
+
+        for MODEL_NAME in $MODEL_NAMES; do
+          echo "------------------------------"
+          echo "Updating registry for model: $MODEL_NAME"
+
+          S3_REGISTRY_PREFIX="s3://${ENV_NAME}-ml-platform/models/registry/${MODEL_NAME}"
+
+          echo "pipeline_number=${PIPELINE_NUMBER}" >> latest_available_version
+
+          aws s3 cp latest_available_version "${S3_REGISTRY_PREFIX}/latest_available_version"
+        done

@@ -1,0 +1,8 @@
+version: 2.1
+
+description: >
+  Orb to help deploy new models
+
+orbs:
+  aws-cli: circleci/aws-cli@3.1
+  aws-oidc: ovotech/aws-configure-credentials-oidc@1.0.1

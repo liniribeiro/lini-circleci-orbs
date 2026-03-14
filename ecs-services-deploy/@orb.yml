@@ -1,0 +1,5 @@
+version: 2.1
+description: Commands to help deploy ecs services
+
+orbs:
+  aws-oidc: ovotech/aws-configure-credentials-oidc@1.0.1

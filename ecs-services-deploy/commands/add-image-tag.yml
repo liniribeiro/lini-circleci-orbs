@@ -1,0 +1,27 @@
+description: Add an image tag
+parameters:
+  region:
+    type: string
+    default: us-east-2
+  image-name:
+    type: string
+    default: ""
+  image-version:
+    type: string
+    default: ""
+  image-tag:
+    type: string
+    default: ""
+steps:
+  - run:
+      name: "ECR Put Image (<< parameters.region >>) - << parameters.image-name >>:<< parameters.image-tag >>"
+      command: |
+          MANIFEST=$(aws ecr batch-get-image --repository-name << parameters.image-name >> --image-ids imageTag=<< parameters.image-version >> --query 'images[].imageManifest' --output text --region << parameters.region >>)
+          LATEST_TAG=$(aws ecr describe-images --repository-name=<< parameters.image-name >> --image-ids=imageTag=<< parameters.image-version >>  --region << parameters.region >>)
+          NEW_IMAGE_TAG=$(echo $LATEST_TAG | jq --arg NEW_TAG << parameters.image-tag >> '.imageDetails[] | select([.imageTags[] == $NEW_TAG] | any)')
+
+          if [ -n "$NEW_IMAGE_TAG" ] ; then
+              echo " * Image...<< parameters.image-name >> already tagged, skipping step ..."
+          else
+             aws ecr put-image --repository-name << parameters.image-name >> --image-tag << parameters.image-tag >> --image-manifest "${MANIFEST}" --region << parameters.region >>
+          fi

@@ -1,0 +1,72 @@
+parameters:
+  env-name:
+    type: string
+    default: "staging"
+  model-names:
+    type: string
+    default: "template-ml-model"
+  wait-datasync:
+    type: boolean
+    default: true
+  pipeline-number:
+    type: integer
+  aws-region:
+    type: string
+    default: "us-east-2"
+executor: aws-cli/default
+resource_class: small
+steps:
+  - checkout
+  - aws-oidc/aws-configure-credentials:
+      role-arn: ${AWS_ROLE_ARN}
+  - run:
+      name: Bypass training - copy latest model version training artifacts to current package version folder
+      command: |
+        MODEL_NAMES="<< parameters.model-names >>"
+        CURRENT_VERSION=<< parameters.pipeline-number >>
+        ENV_NAME="<< parameters.env-name >>"
+
+        for MODEL_NAME in $MODEL_NAMES; do
+            echo "------------------------------"
+            echo "Processing model: $MODEL_NAME"
+
+            S3_REGISTRY_PREFIX="s3://${ENV_NAME}-ml-platform/models/registry/${MODEL_NAME}"
+            S3_MODEL_PREFIX="s3://${ENV_NAME}-ml-platform/models/${MODEL_NAME}"
+
+            LATEST_TRAINED_VERSION=$(aws s3 cp "${S3_REGISTRY_PREFIX}/latest_trained_version" -)
+
+            if [ "$LATEST_TRAINED_VERSION" = "$CURRENT_VERSION" ]; then
+              echo "Versions are the same ($CURRENT_VERSION). Skipping copy for $MODEL_NAME."
+              continue
+            fi
+
+            ORIGIN_KEY="${S3_MODEL_PREFIX}/${LATEST_TRAINED_VERSION}/training-artifacts"
+            TARGET_KEY="${S3_MODEL_PREFIX}/${CURRENT_VERSION}/training-artifacts"
+
+            echo "Copying from $ORIGIN_KEY to $TARGET_KEY"
+            aws s3 cp "$ORIGIN_KEY" "$TARGET_KEY" --recursive
+          done
+
+  - run:
+      name: Start DataSync Task
+      command: |
+        TASK_INPUT=<< parameters.env-name >>-ml-platform-efs-models-task
+        REGION=<< parameters.aws-region >>
+
+        TASK_ARN=$(aws datasync list-tasks \
+          --region "$REGION" \
+          --query "Tasks[?Name=='$TASK_INPUT'].TaskArn" \
+          --output text
+        ) || true
+
+        if [[ -z "$TASK_ARN" || "$TASK_ARN" == "None" ]]; then
+          echo "Error: DataSync task not found for '$TASK_INPUT' in region $REGION" >&2
+          exit 1
+        fi
+
+        EXEC_ARN=$(aws datasync start-task-execution --region "$REGION" --task-arn "$TASK_ARN" --query TaskExecutionArn --output text)
+        echo "Started DataSync Execution: $EXEC_ARN"
+
+        if [[ "${WAIT_DATASYNC:-<< parameters.wait-datasync >>}" == "true" ]]; then
+          aws datasync describe-task-execution --region "$REGION" --task-execution-arn "$EXEC_ARN"
+        fi
