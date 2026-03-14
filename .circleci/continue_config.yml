@@ -13,7 +13,12 @@ parameters:
   run-packages:
     type: boolean
     default: false
-
+  run-models:
+    type: boolean
+    default: false
+  run-ecs-service-deploy:
+    type: boolean
+    default: false
 
 jobs:
   validate-orb:
