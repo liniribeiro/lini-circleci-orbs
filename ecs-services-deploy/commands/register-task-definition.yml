@@ -1,0 +1,40 @@
+parameters:
+  file:
+    type: string
+  pipeline-number:
+    type: integer
+  image-tag:
+    type: string
+    default: ""
+  region:
+    type: string
+    default: "us-east-1"
+steps:
+  - run:
+      name: Register New Task Definition
+      command: |
+        export IMAGE_TAG=<< parameters.image-tag >>
+        export PIPELINE_NUMBER=<< parameters.pipeline-number >>
+
+        TASK_DEF_SOURCE="<< parameters.file >>"
+        if [[ "$TASK_DEF_SOURCE" == s3://* ]]; then
+          aws s3 cp "$TASK_DEF_SOURCE" /tmp/task-def-template.json --no-progress
+          TASK_DEF_SOURCE="/tmp/task-def-template.json"
+        fi
+        TASK_DEFINITION=$(circleci env subst < "$TASK_DEF_SOURCE")
+
+        aws ecs register-task-definition \
+          --region << parameters.region >> \
+          --cli-input-json "$TASK_DEFINITION" > new_task_definition.json
+
+        NEW_REVISION_DATA=$(jq -r '.taskDefinition.revision' new_task_definition.json)
+        NEW_TASK_DEFINITION_ARN=$(jq -r '.taskDefinition.taskDefinitionArn' new_task_definition.json)
+
+        echo "export NEW_REVISION_DATA=${NEW_REVISION_DATA}" >> "$BASH_ENV"
+        echo "export NEW_TASK_DEFINITION_ARN=${NEW_TASK_DEFINITION_ARN}" >> "$BASH_ENV"
+
+        echo "task_definition_revision=${NEW_REVISION_DATA}"
+        echo "task_definition_arn=${NEW_TASK_DEFINITION_ARN}"
+
+  - store_artifacts:
+      path: new_task_definition.json

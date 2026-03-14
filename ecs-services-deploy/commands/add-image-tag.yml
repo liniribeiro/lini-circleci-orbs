@@ -21,7 +21,7 @@ steps:
           NEW_IMAGE_TAG=$(echo $LATEST_TAG | jq --arg NEW_TAG << parameters.image-tag >> '.imageDetails[] | select([.imageTags[] == $NEW_TAG] | any)')
 
           if [ -n "$NEW_IMAGE_TAG" ] ; then
-              echo " * Image...<< parameters.image-name >> already tagged, skipping step ..."
+              echo " * Image...<< parameters.image-name >> already tagged, skipping ..."
           else
              aws ecr put-image --repository-name << parameters.image-name >> --image-tag << parameters.image-tag >> --image-manifest "${MANIFEST}" --region << parameters.region >>
           fi
