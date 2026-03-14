@@ -1,0 +1,10 @@
+parameters:
+  package_pipy_uri:
+    type: string
+description: Build packages using twine
+steps:
+  - run:
+      name: Publishing Package
+      command: |
+        poetry --skip-existing publish
+        echo "Package updated: << parameters.package_pipy_uri >> "

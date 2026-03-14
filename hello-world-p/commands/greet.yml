@@ -1,0 +1,7 @@
+description: Greet someone with a "hello xanana".
+parameters:
+   to:
+       type: string
+       default: World
+steps:
+   - run: echo "Hello, << parameters.to >> aaa11aa"
