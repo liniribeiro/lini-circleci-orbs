@@ -97,3 +97,25 @@ workflows:
           requires:
            - validate-orb
           context: orb-publish
+
+  ecs-services-deploy:
+    when: << pipeline.parameters.run-ecs-services-deploy >>
+    jobs:
+      - validate-orb:
+          path: ecs-services-deploy
+      - publish-orb:
+          path: ecs-services-deploy
+          requires:
+           - validate-orb
+          context: orb-publish
+
+  models:
+    when: << pipeline.parameters.run-models >>
+    jobs:
+      - validate-orb:
+          path: models
+      - publish-orb:
+          path: models
+          requires:
+           - validate-orb
+          context: orb-publish
