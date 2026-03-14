@@ -16,4 +16,4 @@ workflows:
             (packages|\.circleci)/.* run-packages true
             (hello-world-p|\.circleci)/.* run-hello true
             (run-ecs-services-deploy|\.circleci)/.* run-ecs-services-deploy true
-            (models|\.circleci)/.* run-modelstrue
+            (models|\.circleci)/.* run-models true
