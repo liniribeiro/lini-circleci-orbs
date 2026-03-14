@@ -16,7 +16,7 @@ parameters:
   run-models:
     type: boolean
     default: false
-  run-ecs-service-deploy:
+  run-ecs-services-deploy:
     type: boolean
     default: false
 
